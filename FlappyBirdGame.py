@@ -210,6 +210,8 @@ class FlappyBirdGame:
         while self.status != GAME_CLOSE:
             print("automatic_mode = ", self.autonomous_mode)
             if self.autonomous_mode:
+                self.reset_game_state(bird)
+                self.status = GAME_RUNNING
                 return
             self.manual_input(bird)
             self.update_game_state([bird])
