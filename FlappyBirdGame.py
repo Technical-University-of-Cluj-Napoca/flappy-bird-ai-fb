@@ -106,13 +106,14 @@ class FlappyBirdGame:
         # 4. Update score (Each successful pass through a pair of pipes awards the player one point [cite: 62])
         pass
 
-    def render(self, bird: FlappyBirdAgent):
+    def render(self, birds: list[FlappyBirdAgent]):
         self.screen.blit(self.images.background, (0,0))
         for pipe in self.pipes:
             self.screen.blit(pygame.transform.scale(self.images.pipe, (PIPE_WIDTH, pipe.left_up)), (pipe.left_y, 0))
             print((PIPE_WIDTH, SCREEN_HEIGHT - pipe.left_down), (pipe.left_y, pipe.left_down))
             self.screen.blit(pygame.transform.scale(self.images.pipe, (PIPE_WIDTH, SCREEN_HEIGHT - pipe.left_down)), (pipe.left_y, pipe.left_down))
-        self.screen.blit(self.images.bird, (bird.y, bird.x))
+        for bird in birds:
+            self.screen.blit(self.images.bird, (bird.y, bird.x))
         pass
 
     # --- Manual Mode Specifics ---
@@ -161,7 +162,7 @@ class FlappyBirdGame:
         while not self.close_game:
             self.manual_input(bird)
             self.update_game_state([bird])
-            self.render(bird)
+            self.render([bird])
             pygame.display.update()
             if not bird.is_alive:
                 #self.close_game = True

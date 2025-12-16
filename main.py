@@ -40,6 +40,7 @@ def run_autonomous_mode(game: FlappyBirdGame, ga: GeneticAlgorithm, birds, max_g
             alive_birds = [bird for bird in alive_birds if bird.is_alive]
 
             # 5. Render the game (optional, but helpful for visualization)
+            game.update_game_state(birds)
             game.render(alive_birds)
 
             # ... (Add a small delay/clock tick)
@@ -66,6 +67,6 @@ def run_manual_mode():
     game.game_loop()
     time.sleep(1)
 
-run_manual_mode()
+#run_manual_mode()
 
-#run_autonomous_mode(MyGame, MyGA, MyBirds)
+run_autonomous_mode(MyGame, MyGA, MyBirds)
