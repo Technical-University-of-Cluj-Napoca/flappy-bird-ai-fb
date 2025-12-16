@@ -62,11 +62,9 @@ def run_autonomous_mode(game: FlappyBirdGame, ga: GeneticAlgorithm, birds, max_g
 
         # Break condition if a very high score is reached
 
-def run_manual_mode():
+if __name__ == "__main__":
     game = FlappyBirdGame()
     game.game_loop()
-    time.sleep(1)
-
-run_manual_mode()
-
-#run_autonomous_mode(MyGame, MyGA, MyBirds)
+    if game.autonomous_mode:
+        ga = GeneticAlgorithm(population_size=100)
+        run_autonomous_mode(game, ga, ga.initial_population)

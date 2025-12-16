@@ -53,9 +53,8 @@ class Buttons:
         self.play = Button.Button(screen, (int(SCREEN_WIDTH * 0.4), int(SCREEN_HEIGHT * 0.8)),
                                              "play", COLOR_BUTTON, COLOR_BLACK, 100)
 
-
 class FlappyBirdGame:
-    def __init__(self, autonomous_mode=True):
+    def __init__(self, autonomous_mode=False):
         self.autonomous_mode:bool = autonomous_mode
         self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
         self.pipes:list[Pipe] = []
@@ -86,20 +85,15 @@ class FlappyBirdGame:
                 update_done = True
     def new_pipe(self, y:int, pipe_width:int, pipe_gap:int) -> Pipe:
         up_pipe = random.randint( int(SCREEN_HEIGHT * 0.2), int(SCREEN_HEIGHT * 0.8) - pipe_gap)
-        print("up_pipe = ", up_pipe)
-        print(up_pipe + pipe_gap, up_pipe, y)
+        # print("up_pipe = ", up_pipe)
+        # print(up_pipe + pipe_gap, up_pipe, y)
         return Pipe(up_pipe + pipe_gap, up_pipe, pipe_width, y)
     def update_physics(self, bird: FlappyBirdAgent):
-        # Apply gravity (Faby is affected by gravity [cite: 58])
         bird.velocity += GRAVITY
         bird.x += bird.velocity
 
-        # Check for floor collision
         if bird.x + BIRD_DIMENSION > SCREEN_HEIGHT or bird.x < 0:  # Assuming 50 is ground level
             bird.is_alive = False
-
-        # Move pipes
-        # ... (Update pipe positions)
 
         for pipe in self.pipes:
             pipe.left_y -= PIPE_SPEED
@@ -143,7 +137,6 @@ class FlappyBirdGame:
         self.buttons.manual_mode.draw()
         self.buttons.play.draw()
         pass
-
     def render_game(self, birds: list[FlappyBirdAgent]):
         self.screen.blit(self.images.background, (0, 0))
         for pipe in self.pipes:
@@ -153,8 +146,6 @@ class FlappyBirdGame:
                              (pipe.left_y, pipe.left_down))
         for bird in birds:
             self.screen.blit(self.images.bird, (bird.y, bird.x))
-
-    # --- Manual Mode Specifics ---
     def manual_input(self, bird):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -168,7 +159,6 @@ class FlappyBirdGame:
         elif self.status == GAME_MENU:
             self.manual_input_menu()
         pass
-
     def manual_input_menu(self):
         if self.status != GAME_MENU:
             raise NotImplementedError
@@ -178,11 +168,7 @@ class FlappyBirdGame:
             self.autonomous_mode = False
         if self.buttons.play.click():
             self.status = GAME_RUNNING
-
-
     def manual_input_game(self, bird):
-        # Handle user input (click or space bar) to make Faby flap [cite: 59, 107]
-
         keys = pygame.key.get_pressed()
         if keys[pygame.K_w] or keys[pygame.K_UP]:
             if not self.flap_key_pressed:
@@ -204,8 +190,6 @@ class FlappyBirdGame:
                 else:
                     return None, self.pipes[i+1]
         raise NotImplementedError
-
-
     def reset_game_state(self, bird: FlappyBirdAgent):
         set_bird_def(bird)
         game_reset(self)
@@ -215,11 +199,12 @@ class FlappyBirdGame:
             set_bird_def(bird)
         game_reset(self)
         pass
-
     def game_loop(self):
         bird = FlappyBirdAgent()
         while self.status != GAME_CLOSE:
             print("automatic_mode = ", self.autonomous_mode)
+            if self.autonomous_mode:
+                return
             self.manual_input(bird)
             self.update_game_state([bird])
             self.render([bird])
@@ -227,7 +212,6 @@ class FlappyBirdGame:
             if not bird.is_alive:
                 #self.close_game = True
                 self.reset_game_state(bird)
-
 
 def game_reset(game: FlappyBirdGame):
     game.pipes = []
