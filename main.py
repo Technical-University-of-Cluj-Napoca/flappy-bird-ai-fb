@@ -67,6 +67,6 @@ def run_manual_mode():
     game.game_loop()
     time.sleep(1)
 
-#run_manual_mode()
+run_manual_mode()
 
-run_autonomous_mode(MyGame, MyGA, MyBirds)
+#run_autonomous_mode(MyGame, MyGA, MyBirds)
