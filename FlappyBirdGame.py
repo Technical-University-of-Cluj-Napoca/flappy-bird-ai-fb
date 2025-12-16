@@ -65,6 +65,7 @@ class FlappyBirdGame:
         self.flap_key_pressed:bool = False
         self.buttons:Buttons = Buttons(self.screen)
         self.distance = 0
+        self.first_pipe_pass_dis = 0
 
         game_reset(self)
     def update_pipes(self):
@@ -72,6 +73,7 @@ class FlappyBirdGame:
         l = len(self.pipes)
         if l == 0:
             self.pipes.append(self.new_pipe(int(SCREEN_WIDTH * 0.33), PIPE_WIDTH, PIPE_GAP))
+            self.first_pipe_pass_dis = self.pipes[0].left_y + PIPE_WIDTH
         while not update_done:
             ref_poz = 0
             l = len(self.pipes)
@@ -103,8 +105,10 @@ class FlappyBirdGame:
                 return True
         return False
     def update_game_state(self, birds: list[FlappyBirdAgent]):
+        if self.status != GAME_RUNNING:
+            return
         self.distance += PIPE_SPEED
-        self.score = self.distance // PIPE_DISTANCE
+        self.score = max((self.distance - self.first_pipe_pass_dis) // PIPE_DISTANCE + 2, 0)
         pygame.event.pump()
         self.update_pipes()
         for bird in birds:
@@ -146,6 +150,8 @@ class FlappyBirdGame:
                              (pipe.left_y, pipe.left_down))
         for bird in birds:
             self.screen.blit(self.images.bird, (bird.y, bird.x))
+
+        draw_text(self.screen, (int(SCREEN_WIDTH * 0.48), int(SCREEN_HEIGHT * 0.1)), "Score: %d" % self.score)
     def manual_input(self, bird):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -219,3 +225,9 @@ def game_reset(game: FlappyBirdGame):
     game.status = GAME_MENU
     game.curr_poz_left = 0
     game.distance = 0
+    game.first_pipe_pass_dis = 0
+def draw_text(screen, poz: tuple[int, int], text: str):
+    pygame.event.get()  # process events to prevent freezing
+    font = pygame.font.SysFont("Arial", 40)
+    text_surface = font.render(text, True, COLOR_BLACK)
+    screen.blit(text_surface, poz)
