@@ -2,6 +2,7 @@
 # 5. Main Execution in Jupyter Cells
 # ====================================================================
 import pygame
+import time
 
 from FlappyBirdGame import FlappyBirdGame
 from GeneticAlgorithm import GeneticAlgorithm
@@ -56,13 +57,14 @@ def run_autonomous_mode(game: FlappyBirdGame, ga: GeneticAlgorithm, birds, max_g
         birds = ga.create_next_generation(species_list)
 
         # Reset game for the new generation
-        game.reset_game_state()
+        game.reset_game_state_birds(birds)
 
         # Break condition if a very high score is reached
 
 def run_manual_mode():
     game = FlappyBirdGame()
     game.game_loop()
+    time.sleep(1)
 
 run_manual_mode()
 

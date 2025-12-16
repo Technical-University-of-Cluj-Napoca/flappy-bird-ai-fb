@@ -14,7 +14,7 @@ class FlappyBirdAgent:
     def __init__(self, brain_weights=None):
         self.x:int = SCREEN_HEIGHT // 2
         self.y:int = SCREEN_WIDTH // 10
-        self.velocity:int = 0
+        self.velocity:float = 0
         self.is_alive:bool = True
         self.is_flapping:bool = False  # Boolean state describing whether the bird is in the middle of the jump [cite: 178]
         self.brain = Perceptron.Perceptron(brain_weights)
@@ -24,9 +24,7 @@ class FlappyBirdAgent:
         set_bird_def(self)
 
     def flap(self):
-        if not self.is_flapping:
-            self.velocity = VELOCITY_AFTER_FLAP  # Example jump velocity
-            self.is_flapping = True
+        self.velocity = VELOCITY_AFTER_FLAP
 
     def get_sensors(self, pipes: Union[tuple[Pipe, Pipe], tuple[None, Pipe]]) -> tuple[int,int,int]:
         """
@@ -35,7 +33,7 @@ class FlappyBirdAgent:
         """
         # Find the next pipe the bird has to pass through
 
-        distance_nex_pipe = pipes[1].left_x - self.y
+        distance_nex_pipe = pipes[1].left_y - self.y
 
         pipe:Pipe = pipes[0]
         if pipe is None:

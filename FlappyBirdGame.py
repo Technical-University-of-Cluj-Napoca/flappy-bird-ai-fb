@@ -43,6 +43,7 @@ class FlappyBirdGame:
         self.close_game = False
         self.curr_poz_left = 0
         self.images = Images()
+        self.flap_key_pressed:bool = False
 
 
     def update_pipes(self):
@@ -54,42 +55,41 @@ class FlappyBirdGame:
             ref_poz = 0
             l = len(self.pipes)
             if l > 0:
-                ref_poz = self.pipes[0].left_x
+                ref_poz = self.pipes[0].left_y
             if ref_poz < 0:
                 self.pipes.remove(self.pipes[0])
-            elif self.pipes[l-1].left_x + PIPE_DISTANCE <= SCREEN_WIDTH:
-                self.pipes.append(self.new_pipe(self.pipes[l-1].left_x + PIPE_DISTANCE, PIPE_WIDTH, PIPE_GAP))
+            elif self.pipes[l-1].left_y + PIPE_DISTANCE <= SCREEN_WIDTH:
+                self.pipes.append(self.new_pipe(self.pipes[l-1].left_y + PIPE_DISTANCE, PIPE_WIDTH, PIPE_GAP))
             else:
                 update_done = True
 
 
     def new_pipe(self, y:int, pipe_width:int, pipe_gap:int) -> Pipe:
-        down_pipe = random.randint( int(SCREEN_HEIGHT * 0.2), int(SCREEN_HEIGHT * 0.8))
-        return Pipe(down_pipe + pipe_gap, down_pipe, pipe_width, y)
+        up_pipe = random.randint( int(SCREEN_HEIGHT * 0.2), int(SCREEN_HEIGHT * 0.8) - pipe_gap)
+        print("up_pipe = ", up_pipe)
+        print(up_pipe + pipe_gap, up_pipe, y)
+        return Pipe(up_pipe + pipe_gap, up_pipe, pipe_width, y)
 
 
     def update_physics(self, bird: FlappyBirdAgent):
         # Apply gravity (Faby is affected by gravity [cite: 58])
         bird.velocity += GRAVITY
-        bird.y += bird.velocity
+        bird.x += bird.velocity
 
         # Check for floor collision
-        if bird.x > SCREEN_HEIGHT or bird.x < 0:  # Assuming 50 is ground level
+        if bird.x + BIRD_DIMENSION > SCREEN_HEIGHT or bird.x < 0:  # Assuming 50 is ground level
             bird.is_alive = False
 
         # Move pipes
         # ... (Update pipe positions)
 
         for pipe in self.pipes:
-            pipe.left_x -= PIPE_SPEED
+            pipe.left_y -= PIPE_SPEED
 
     def check_collision(self, bird: FlappyBirdAgent) -> bool:
         for pipe in self.pipes:
-            if pipe.left_down >= bird.x and pipe.left_up <= bird.x + BIRD_DIMENSION:
-                continue
-            if pipe.left_x >= bird.y and pipe.left_x + pipe.width <= bird.y + BIRD_DIMENSION:
-                continue
-            return True
+            if pipe.collides_with(bird.x, bird.y, BIRD_DIMENSION):
+                return True
         return False
 
     def update_game_state(self, birds: list[FlappyBirdAgent]):
@@ -109,8 +109,9 @@ class FlappyBirdGame:
     def render(self, bird: FlappyBirdAgent):
         self.screen.blit(self.images.background, (0,0))
         for pipe in self.pipes:
-            self.screen.blit(pygame.transform.scale(self.images.pipe, (PIPE_WIDTH, pipe.left_down)), (pipe.left_x, pipe.left_down))
-            self.screen.blit(pygame.transform.scale(self.images.pipe, (PIPE_WIDTH, SCREEN_HEIGHT - pipe.left_up)), (pipe.left_x, 0))
+            self.screen.blit(pygame.transform.scale(self.images.pipe, (PIPE_WIDTH, pipe.left_up)), (pipe.left_y, 0))
+            print((PIPE_WIDTH, SCREEN_HEIGHT - pipe.left_down), (pipe.left_y, pipe.left_down))
+            self.screen.blit(pygame.transform.scale(self.images.pipe, (PIPE_WIDTH, SCREEN_HEIGHT - pipe.left_down)), (pipe.left_y, pipe.left_down))
         self.screen.blit(self.images.bird, (bird.y, bird.x))
         pass
 
@@ -123,7 +124,11 @@ class FlappyBirdGame:
                 sys.exit()
         keys = pygame.key.get_pressed()
         if keys[pygame.K_w] or keys[pygame.K_UP]:
-            bird.flap()
+            if not self.flap_key_pressed:
+                bird.flap()
+                self.flap_key_pressed = True
+        else:
+           self.flap_key_pressed = False
         if keys[pygame.K_r]:
             self.reset_game_state(bird)
         if keys[pygame.K_ESCAPE]:
@@ -133,8 +138,8 @@ class FlappyBirdGame:
     def next_pipe(self, poz_y:int) -> Union[tuple[Pipe, Pipe], tuple[None, Pipe]]:
         l = len(self.pipes)
         for i in range(l-1):
-            if self.pipes[i].left_x <= poz_y <= self.pipes[i+1].left_x:
-                if self.pipes[i].left_x + self.pipes[i].width <= poz_y:
+            if self.pipes[i].left_y <= poz_y <= self.pipes[i + 1].left_y:
+                if self.pipes[i].left_y + self.pipes[i].width <= poz_y:
                     return self.pipes[i], self.pipes[i+1]
                 else:
                     return None, self.pipes[i+1]
@@ -143,6 +148,11 @@ class FlappyBirdGame:
 
     def reset_game_state(self, bird: FlappyBirdAgent):
         set_bird_def(bird)
+        game_reset(self)
+        pass
+    def reset_game_state_birds(self, birds: list[FlappyBirdAgent]):
+        for bird in birds:
+            set_bird_def(bird)
         game_reset(self)
         pass
 
@@ -154,6 +164,7 @@ class FlappyBirdGame:
             self.render(bird)
             pygame.display.update()
             if not bird.is_alive:
+                #self.close_game = True
                 self.reset_game_state(bird)
 
 
