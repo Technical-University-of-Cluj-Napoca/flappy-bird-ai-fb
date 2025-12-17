@@ -104,8 +104,7 @@ class FlappyBirdGame:
         for bird in birds:
             if bird.is_alive:
                 bird.score = self.score
-            print("bird score = ", bird.score, " is live = ", bird.is_alive, "mode auto = ",
-                  self.autonomous_mode, "game score = ", self.score, "game d = ", self.distance)
+
         pygame.event.pump()
         self.update_pipes()
         for pipe in self.pipes:
@@ -199,7 +198,7 @@ class FlappyBirdGame:
     def manual_input_menu(self):
         if self.status != GAME_MENU:
             raise NotImplementedError
-        print("MENU")
+
         if self.buttons.auto_mode.click():
             self.autonomous_mode = True
         if self.buttons.manual_mode.click():

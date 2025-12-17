@@ -77,8 +77,8 @@ def run_autonomous_mode(game: FlappyBirdGame, ga: GeneticAlgorithm, birds, max_g
         game.reset_game_state_birds(birds)
 
         if best_distance > DISTANCE_TARGET:
-         print(f"Target distance of {DISTANCE_TARGET} reached! Best distance: {best_distance}")
-        break
+            print(f"Target distance of {DISTANCE_TARGET} reached! Best distance: {best_distance}")
+            break
 
     print("Training complete!")
     pygame.quit()
