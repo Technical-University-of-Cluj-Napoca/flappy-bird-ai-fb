@@ -11,7 +11,7 @@ import Button
 
 from FlappyBirdAgent import FlappyBirdAgent, set_bird_def
 from GAME_CONSTANTS import SCREEN_WIDTH, SCREEN_HEIGHT, PIPE_WIDTH, BIRD_DIMENSION, GRAVITY, PIPE_SPEED, PIPE_DISTANCE, \
-    PIPE_GAP
+    PIPE_GAP, set_d_p, ORIGINAL_PIPE_DISTANCE, set_speed, ORIGINAL_PIPE_SPEED
 from Pipe import Pipe
 
 # Constants (Adjust as needed for screen size, bird size, etc.)
@@ -65,7 +65,7 @@ class FlappyBirdGame:
         self.flap_key_pressed:bool = False
         self.buttons:Buttons = Buttons(self.screen)
         self.distance = 0
-        self.first_pipe_pass_dis = 0
+        self.d_first_pipe = 0
 
         game_reset(self)
     def update_pipes(self):
@@ -73,7 +73,7 @@ class FlappyBirdGame:
         l = len(self.pipes)
         if l == 0:
             self.pipes.append(self.new_pipe(int(SCREEN_WIDTH * 0.33), PIPE_WIDTH, PIPE_GAP))
-            self.first_pipe_pass_dis = self.pipes[0].left_y + PIPE_WIDTH
+            self.d_first_pipe = self.pipes[0].left_y + self.pipes[0].width
         while not update_done:
             ref_poz = 0
             l = len(self.pipes)
@@ -86,7 +86,7 @@ class FlappyBirdGame:
             else:
                 update_done = True
     def new_pipe(self, y:int, pipe_width:int, pipe_gap:int) -> Pipe:
-        up_pipe = random.randint( int(SCREEN_HEIGHT * 0.2), int(SCREEN_HEIGHT * 0.8) - pipe_gap)
+        up_pipe = random.randint( int(SCREEN_HEIGHT * 0.1), int(SCREEN_HEIGHT * 0.9) - pipe_gap)
         # print("up_pipe = ", up_pipe)
         # print(up_pipe + pipe_gap, up_pipe, y)
         return Pipe(up_pipe + pipe_gap, up_pipe, pipe_width, y)
@@ -97,29 +97,49 @@ class FlappyBirdGame:
         if bird.x + BIRD_DIMENSION > SCREEN_HEIGHT or bird.x < 0:  # Assuming 50 is ground level
             bird.is_alive = False
 
-        for pipe in self.pipes:
-            pipe.left_y -= PIPE_SPEED
+
     def check_collision(self, bird: FlappyBirdAgent) -> bool:
         for pipe in self.pipes:
             if pipe.collides_with(bird.x, bird.y, BIRD_DIMENSION):
                 return True
         return False
+
     def update_game_state(self, birds: list[FlappyBirdAgent]):
-        if self.status != GAME_RUNNING:
-            return
+
         self.distance += PIPE_SPEED
-        self.score = max((self.distance - self.first_pipe_pass_dis) // PIPE_DISTANCE + 2, 0)
+        self.score = max(int(((self.distance - self.d_first_pipe + SCREEN_WIDTH * 0.33) / PIPE_DISTANCE)), 0)
+        for bird in birds:
+            if bird.is_alive:
+                bird.score = self.score
+            print("bird score = ", bird.score, " is live = ", bird.is_alive, "mode auto = ",
+                  self.autonomous_mode, "game score = ", self.score, "game d = ", self.distance)
+        #print("score = ", self.score, self.distance, self.d_first_pipe, PIPE_DISTANCE)
         pygame.event.pump()
         self.update_pipes()
+        for pipe in self.pipes:
+            pipe.left_y -= PIPE_SPEED
         for bird in birds:
             self.update_physics(bird)
+
+
+            # Check for ground collision immediately after physics update
+            if bird.x + BIRD_DIMENSION > SCREEN_HEIGHT or bird.x < 0:
+                bird.is_alive = False
+
             if self.check_collision(bird):
                 bird.is_alive = False
 
+
         if not self.autonomous_mode:
+            no_bird_live = True
             for bird in birds:
-                if not bird.is_alive:
-                    self.status = GAME_GAME_OVER
+                if bird.is_alive:
+                    no_bird_live = False
+            if no_bird_live:
+                self.reset_game_state_birds(birds)
+                self.status = GAME_MENU
+
+        #self.increase_dificulty()
         pass
     def render(self, birds: list[FlappyBirdAgent]):
         if self.status == GAME_RUNNING or self.status == GAME_GAME_OVER:
@@ -141,18 +161,55 @@ class FlappyBirdGame:
         self.buttons.manual_mode.draw()
         self.buttons.play.draw()
         pass
+
+    # Add this to FlappyBirdGame class
+
+    # Add this to FlappyBirdGame class
+
     def render_game(self, birds: list[FlappyBirdAgent]):
+        # Always draw background first
         self.screen.blit(self.images.background, (0, 0))
+
+        # Draw pipes
         for pipe in self.pipes:
-            self.screen.blit(pygame.transform.scale(self.images.pipe, (PIPE_WIDTH, pipe.left_up)), (pipe.left_y, 0))
-            print((PIPE_WIDTH, SCREEN_HEIGHT - pipe.left_down), (pipe.left_y, pipe.left_down))
+            self.screen.blit(pygame.transform.scale(self.images.pipe, (PIPE_WIDTH, pipe.left_up)),
+                             (pipe.left_y, 0))
             self.screen.blit(pygame.transform.scale(self.images.pipe, (PIPE_WIDTH, SCREEN_HEIGHT - pipe.left_down)),
                              (pipe.left_y, pipe.left_down))
-        for bird in birds:
-            self.screen.blit(self.images.bird, (bird.y, bird.x))
 
-        draw_text(self.screen, (int(SCREEN_WIDTH * 0.48), int(SCREEN_HEIGHT * 0.1)), "Score: %d" % self.score)
+        # Draw birds
+        for bird in birds:
+            if bird.is_alive:  # Only draw alive birds
+                self.screen.blit(self.images.bird, (bird.y, bird.x))
+
+        # Draw score/info
+        if self.autonomous_mode:
+            font = pygame.font.SysFont("Arial", 48, bold=True)
+            alive_count = len([b for b in birds if b.is_alive])
+
+            # Create text with black background for visibility
+            score_text = font.render(f"Score: {self.score} | Alive: {alive_count}/{len(birds)}",
+                                     True, (255, 255, 255))
+
+            # Draw black rectangle behind text
+            text_rect = score_text.get_rect()
+            text_rect.topleft = (10, 10)
+            pygame.draw.rect(self.screen, (0, 0, 0), text_rect.inflate(20, 10))
+
+            # Draw text
+            self.screen.blit(score_text, (20, 15))
+        else:
+            # Manual mode - show just the score
+            font = pygame.font.SysFont("Arial", 64, bold=True)
+            score_text = font.render(f"{self.score}", True, (255, 255, 255))
+            text_rect = score_text.get_rect(center=(SCREEN_WIDTH // 2, 100))
+
+            # Black outline
+            pygame.draw.rect(self.screen, (0, 0, 0), text_rect.inflate(20, 10))
+            self.screen.blit(score_text, text_rect)
+
     def manual_input(self, bird):
+
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
@@ -168,6 +225,7 @@ class FlappyBirdGame:
     def manual_input_menu(self):
         if self.status != GAME_MENU:
             raise NotImplementedError
+        print("MENU")
         if self.buttons.auto_mode.click():
             self.autonomous_mode = True
         if self.buttons.manual_mode.click():
@@ -187,15 +245,55 @@ class FlappyBirdGame:
         if keys[pygame.K_ESCAPE]:
             self.status = GAME_CLOSE
         pass
-    def next_pipe(self, poz_y:int) -> Union[tuple[Pipe, Pipe], tuple[None, Pipe]]:
+
+    def get_closest_pipes(self, poz_y: int) -> Union[tuple[Pipe, Pipe], tuple[None, Pipe]]:
+        """
+        Returns the current and next pipe for a bird at position poz_y.
+        Returns (current_pipe, next_pipe) or (None, next_pipe) if bird is between pipes.
+        """
         l = len(self.pipes)
-        for i in range(l-1):
-            if self.pipes[i].left_y <= poz_y <= self.pipes[i + 1].left_y:
-                if self.pipes[i].left_y + self.pipes[i].width <= poz_y:
-                    return self.pipes[i], self.pipes[i+1]
+
+        # No pipes yet
+        if l == 0:
+            return None, None
+
+        # Only one pipe
+        if l == 1:
+            return None, self.pipes[0]
+
+        # Bird is before the first pipe
+        if poz_y < self.pipes[0].left_y:
+            return None, self.pipes[0]
+
+        # Check between pipes
+        for i in range(l - 1):
+            pipe_current = self.pipes[i]
+            pipe_next = self.pipes[i + 1]
+
+            # Bird is between pipe i and pipe i+1
+            if pipe_current.left_y <= poz_y < pipe_next.left_y:
+                # Check if bird has passed pipe_current (cleared it)
+                if poz_y >= pipe_current.left_y + pipe_current.width:
+                    # Bird is in the gap between pipes
+                    return None, pipe_next
                 else:
-                    return None, self.pipes[i+1]
-        raise NotImplementedError
+                    # Bird is still inside/approaching pipe_current
+                    return pipe_current, pipe_next
+
+        # Bird is past all pipes but the last one
+        # This means bird is at or past the last pipe
+        last_pipe = self.pipes[l - 1]
+        if poz_y >= last_pipe.left_y:
+            if poz_y >= last_pipe.left_y + last_pipe.width:
+                # Bird passed the last pipe - return None for both (needs new pipe)
+                return None, last_pipe
+            else:
+                # Bird is going through the last pipe
+                return last_pipe, last_pipe
+
+        # Fallback (shouldn't reach here)
+        return None, self.pipes[0]
+
     def reset_game_state(self, bird: FlappyBirdAgent):
         set_bird_def(bird)
         game_reset(self)
@@ -205,31 +303,53 @@ class FlappyBirdGame:
             set_bird_def(bird)
         game_reset(self)
         pass
-    def game_loop(self):
-        bird = FlappyBirdAgent()
-        while self.status != GAME_CLOSE:
-            print("automatic_mode = ", self.autonomous_mode)
-            if self.autonomous_mode:
-                self.reset_game_state(bird)
-                self.status = GAME_RUNNING
-                return
-            self.manual_input(bird)
+
+        # NEW: Replaces game_loop with a single-frame update method
+    def update_frame(self, bird: FlappyBirdAgent) -> None:
+        """
+        Updates the game state for one frame, handles input, and renders.
+        Called repeatedly by the main loop in main.py to manage Menu/Manual game flow.
+        """
+        clock = pygame.time.Clock()
+        FPS = 60
+
+        # 1. Handle Input (Menu or Game)
+        self.manual_input(bird)
+
+        # 2. Update State based on Status
+        if self.status == GAME_RUNNING and not self.autonomous_mode:
+            # Only update physics/state for Manual mode
             self.update_game_state([bird])
+
+        # 3. Handle Game Over (Manual Mode only)
+        # Check if the manual bird has died while the game is running
+        if self.status == GAME_RUNNING and not self.autonomous_mode and not bird.is_alive:
+            self.status = GAME_GAME_OVER
+
+        # 4. Render
+        if self.status in (GAME_RUNNING, GAME_MENU, GAME_GAME_OVER):
             self.render([bird])
-            pygame.display.update()
-            if not bird.is_alive:
-                #self.close_game = True
-                self.reset_game_state(bird)
+
+        # 5. Update Display and Tick Clock
+        pygame.display.update()
+        clock.tick(FPS)
+
+    def increase_dificulty(self):
+        if self.score >= 3:
+            set_d_p(ORIGINAL_PIPE_DISTANCE - 20)
+        if self.score >= 6:
+            set_d_p(ORIGINAL_PIPE_DISTANCE - 20)
+        if self.score >= 9:
+            set_speed(ORIGINAL_PIPE_SPEED + 2)
+            pass
+
 
 def game_reset(game: FlappyBirdGame):
     game.pipes = []
     game.score = 0
+    # Set status back to MENU
     game.status = GAME_MENU
     game.curr_poz_left = 0
     game.distance = 0
-    game.first_pipe_pass_dis = 0
-def draw_text(screen, poz: tuple[int, int], text: str):
-    pygame.event.get()  # process events to prevent freezing
-    font = pygame.font.SysFont("Arial", 40)
-    text_surface = font.render(text, True, COLOR_BLACK)
-    screen.blit(text_surface, poz)
+    game.d_first_pipe = 0
+    # Do NOT call game.update_pipes() here.
