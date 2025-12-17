@@ -24,10 +24,7 @@ class Button:
         poz = pygame.mouse.get_pos()
         if not pygame.mouse.get_pressed()[0]:
             return False
-        # print(poz)
-        # print(self.rec)
-        # print(self.rec[0], poz[0], self.rec[0] + self.rec[2])
-        # print(self.rec[1], poz[1], self.rec[1] + self.rec[3])
+
         if self.rec[0] <= poz[0] <= self.rec[0] + self.rec[2]:
             if self.rec[1] <= poz[1] <= self.rec[1] + self.rec[3]:
                 return True
